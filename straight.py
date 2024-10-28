@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
+import time
 import os
 import cv2  # Import OpenCV
 from moviepy.editor import VideoFileClip  # Import VideoFileClip\
@@ -256,7 +257,7 @@ def frame_processor(image):
 
 def webcam_video_processing():
     """Capture video from the webcam and process it for lane detection."""
-    cap = cv2.VideoCapture(0)  # Use 0 for the default webcam
+    cap = cv2.VideoCapture(1)  # Use 0 for the default webcam
      # Set the video frame width and height
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -266,19 +267,28 @@ def webcam_video_processing():
         if not ret:
             break
 
+
+        start_time = time.time()
+
         # Process the frame
         processed_frame = frame_processor(frame)
         
-        #Display resolution of camera for debug- Debin
-        # CamWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        # CamHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        # print(f"Camera Resolution: {CamWidth}x{CamHeight}")
+        processing_time = time.time() - start_time
+        fps = 1 / processing_time if processing_time > 0 else 0
+
+                # Display FPS on the frame
+        cv2.putText(processed_frame, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
+                    1, (255, 0, 0), 2, cv2.LINE_AA)
 
         # Display the resulting frame
         cv2.imshow('Lane Detection - White Lines Only', processed_frame)
 
+        # Wait for the remaining time to complete 1 second
+        #time.sleep(max(1.0 - processing_time, 0))
+
+
         # Break the loop on 'q' key press
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(200) & 0xFF == ord('q'):
             break
 
     cap.release()
