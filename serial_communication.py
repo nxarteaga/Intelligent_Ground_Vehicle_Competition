@@ -1,29 +1,51 @@
-# serial_communication.py
-
 import serial
 import argparse
 import threading
+import time
 
-ser = None  # Make `ser` a global variable
-
-def read_serial():
+def read_serial(ser):
     while True:
-        data = ser.readline().decode('utf-8')
-        if data:
-            print(f"Received: {data}", end='')
+        try:
+            if ser.in_waiting > 0:  # Check if there's data in the input buffer
+                data = ser.readline().decode('utf-8').rstrip()
+                if data:
+                    print(f"Received: {data}")
+        except serial.SerialException as e:
+            print(f"Serial Exception: {e}")
+            break  # Exit the loop if there's an issue
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            break  # Exit on unexpected error
 
-def start_serial_communication(port):
-    global ser
-    ser = serial.Serial(port, baudrate=115200, dsrdtr=None)
-    ser.setRTS(False)
-    ser.setDTR(False)
+def main():
+    parser = argparse.ArgumentParser(description='Serial JSON Communication')
+    parser.add_argument('port', type=str, help='Serial port name (e.g., COM1 or /dev/ttyUSB0)')
+    
+    args = parser.parse_args()
 
-    serial_recv_thread = threading.Thread(target=read_serial)
-    serial_recv_thread.daemon = True
-    serial_recv_thread.start()
+    try:
+        ser = serial.Serial(args.port, baudrate=115200, timeout=1)  # Set timeout
+        ser.setRTS(False)
+        ser.setDTR(False)
 
-def send_command(command):
-    if ser:
-        ser.write(command.encode() + b'\n')
-    else:
-        print("Serial connection not initialized.")
+        # Start a thread to read from the serial port
+        serial_recv_thread = threading.Thread(target=read_serial, args=(ser,))
+        serial_recv_thread.daemon = True  # Daemonize thread
+        serial_recv_thread.start()
+
+        try:
+            while True:
+                # Accept command input from the user
+                command = input("Enter command: ")
+                ser.write(command.encode() + b'\n')
+        except KeyboardInterrupt:
+            pass
+    except serial.SerialException as e:
+        print(f"Failed to open serial port: {e}")
+    finally:
+        if 'ser' in locals() and ser.is_open:
+            ser.close()
+            print("Serial port closed.")
+
+if __name__ == "__main__":
+    main()
