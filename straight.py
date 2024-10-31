@@ -133,7 +133,7 @@ def hough_transform(image):
     rho = 1              # Distance resolution of the accumulator in pixels.
     theta = np.pi / 180  # Angle resolution of the accumulator in radians.
     threshold = 50       # Only lines that are greater than threshold will be returned. Higher the number, fewer lines detected
-    minLineLength = 25   # Line segments shorter than that are rejected. Minimum length of line to be detected
+    minLineLength = 20   # Line segments shorter than that are rejected. Minimum length of line to be detected
     maxLineGap = 100     # Maximum allowed gap between points on the same line to link them. Max gap allowed betweeen the same line to be detected
     lines = cv2.HoughLinesP(image, rho=rho, theta=theta, threshold=threshold,
                              minLineLength=minLineLength, maxLineGap=maxLineGap)
@@ -329,18 +329,22 @@ def frame_processor(image):
     obstacle = False
     #this is the case for both when both lanes are present
     if left_line is not None and right_line is not None: 
+        sendCommand('{"T":1,"L":0.0,"R":0.0}')
         sendCommand('{"T":1,"L":0.15,"R":0.15}')
     #left line and no right line
     if left_line is not None and right_line is None:
         print("no right lane")
-        sendCommand('{"T":1,"L":0.15,"R":0.08}')
+        sendCommand('{"T":1,"L":0.0,"R":0.0}')
+        sendCommand('{"T":1,"L":0.30,"R":0.08}')
     #right line and no left line
-    if right_line is not None and left_line is None:   
-        sendCommand('{"T":1,"L":0.08,"R":0.15}')
+    if right_line is not None and left_line is None: 
+        sendCommand('{"T":1,"L":0.0,"R":0.0}')  
+        sendCommand('{"T":1,"L":0.08,"R":0.30}')
 
     #No lines, keep moving forward
     if right_line is None and left_line is None:
-        sendCommand('{"T":1,"L":0.08,"R":0.08}')
+        sendCommand('{"T":1,"L":0.0,"R":0.0}')
+        sendCommand('{"T":1,"L":0.20,"R":0.20}')
 
     #time.sleep(4.5)
 
@@ -362,7 +366,7 @@ def webcam_video_processing():
         start_time = time.time()
 
         # Process the frame
-        time.sleep(2)
+        #time.sleep(2)
         processed_frame = frame_processor(frame)
         
         processing_time = time.time() - start_time
@@ -383,7 +387,8 @@ def webcam_video_processing():
 
 
         # Break the loop on 'q' key press
-        if cv2.waitKey(50) & 0xFF == ord('q'):
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            sendCommand('{"T":1,"L":0.0,"R":0.0}')
             break
 
     cap.release()
