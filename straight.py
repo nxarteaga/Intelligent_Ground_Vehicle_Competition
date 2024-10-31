@@ -6,7 +6,37 @@ import os
 import cv2  # Import OpenCV
 from moviepy.editor import VideoFileClip  # Import VideoFileClip\
 import requests
+import serial_communication
+import serial
+import threading
 #from TestESP32 import Move_Bot
+
+
+#Define function motorControl
+def sendCommand(command):
+
+    ser = serial.Serial('/dev/serial0',baudrate=115200,timeout=1)
+    ser.setRTS(False)
+    ser.setDTR(False)
+
+    try:
+        #send command
+        ser.write(command.encode()+ b'\n')
+        # Read response from the serial port
+        data = ser.readline().decode('utf-8')
+        if data:
+            print(f"Received: {data}", end='')
+
+        # Clear the input buffer after reading the response
+        ser.reset_input_buffer()
+    
+    finally:
+        # Ensure the serial port is closed after communication
+        ser.close()
+
+
+
+
 
 # Define the function to display images
 def list_images(images, cols=2, rows=None, cmap=None, output_file='output_images.png'):
@@ -162,7 +192,7 @@ def lane_lines(image, lines):
     """Create full length lines from pixel points."""
     left_lane, right_lane = average_slope_intercept(lines)
     y1 = image.shape[0]
-    y2 = y1 * 0.6
+    y2 = y1 * 0.60
     
     left_line = pixel_points(y1, y2, left_lane)
     right_line = pixel_points(y1, y2, right_lane)
@@ -195,12 +225,54 @@ def lane_lines(image, lines):
 #         return "3"
 # ends here
 
-def draw_lane_lines(image, lines, color=[0, 0, 255], thickness=15):
-    """Draw lines onto the input image."""
+# def draw_lane_lines(image, lines, color=[0, 0, 255], thickness=15):
+#     """Draw lines onto the input image."""
+#     line_image = np.zeros_like(image)
+#     for line in lines:
+#         if line is not None:
+#             cv2.line(line_image, *line, color, thickness)
+#             start_point, end_point = line
+#             cv2.putText(line_image,f"Start: {start_point}",start_point,
+#                         cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1,cv2.LINE_AA)
+#             cv2.putText(line_image,f"End: {end_point}",end_point,
+#                         cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1,cv2.LINE_AA)
+#     return cv2.addWeighted(image, 1.0, line_image, 1.0, 0.0)
+def draw_lane_lines(image, lines, color=[0, 0, 255], thickness=12):
+    """Draw lines and the midpoint onto the input image."""
     line_image = np.zeros_like(image)
+    mid_point = None  # Initialize the midpoint variable
+    
     for line in lines:
         if line is not None:
-            cv2.line(line_image, *line, color, thickness)
+            start_point, end_point = line
+            cv2.line(line_image, start_point, end_point, color, thickness)
+            
+            # Calculate midpoint between left and right end points
+            if mid_point is None:
+                mid_point = np.array(end_point)  # Initialize mid_point with the first end_point
+            else:
+                mid_point = (mid_point + np.array(end_point)) // 2  # Average of the points for midpoint
+    
+            cv2.putText(line_image, f"Start: {start_point}", start_point,
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+            cv2.putText(line_image, f"End: {end_point}", end_point,
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+    
+    # Draw midpoint if both lines were detected
+    if mid_point is not None:
+        # Convert midpoint to standard integer format
+        mid_point = (int(mid_point[0]), int(mid_point[1]))
+
+        # Draw a circle at the midpoint
+        cv2.circle(line_image, mid_point, 5, (0, 255, 0), -1)
+        # Draw an "X" at the midpoint for additional visibility
+        cv2.drawMarker(line_image, mid_point, (0, 255, 0), markerType=cv2.MARKER_TILTED_CROSS, markerSize=15, thickness=2)
+        # Print the coordinates of the midpoint
+        print(f"Midpoint: {mid_point}")
+        # Optionally, display the coordinates on the image
+        cv2.putText(line_image, f"Midpoint: {mid_point}", (mid_point[0] + 10, mid_point[1] + 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+    
     return cv2.addWeighted(image, 1.0, line_image, 1.0, 0.0)
 
 def send_command_to_esp32(url):
@@ -252,12 +324,30 @@ def frame_processor(image):
     
     # Draw lane lines for visualization
     result = draw_lane_lines(image, [left_line, right_line])
-    
+
+    #make decision about moving 
+    obstacle = False
+    #this is the case for both when both lanes are present
+    if left_line is not None and right_line is not None: 
+        sendCommand('{"T":1,"L":0.08,"R":0.08}')
+    #left line and no right line
+    if left_line is not None and right_line is None:
+        sendCommand('{"T":1,"L":0.15,"R":0.08}')
+    #right line and no left line
+    if right_line is not None and left_line is None:
+        sendCommand('{"T":1,"L":0.08,"R":0.15}')
+
+    #No lines, keep moving forward
+    if right_line is None and left_line is None:
+        sendCommand('{"T":1,"L":0.08,"R":0.08}')
+
+
+
     return result
 
 def webcam_video_processing():
     """Capture video from the webcam and process it for lane detection."""
-    cap = cv2.VideoCapture(1)  # Use 0 for the default webcam
+    cap = cv2.VideoCapture(0)  # Use 0 for the default webcam
      # Set the video frame width and height
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -280,6 +370,9 @@ def webcam_video_processing():
         cv2.putText(processed_frame, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
                     1, (255, 0, 0), 2, cv2.LINE_AA)
 
+        #serial_communication.start_serial_communication()
+        #command = '{"T":1,"L":0.08,"R":0.08}'
+        #serial_communication.send_command(command)
         # Display the resulting frame
         cv2.imshow('Lane Detection - White Lines Only', processed_frame)
 
