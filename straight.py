@@ -329,19 +329,20 @@ def frame_processor(image):
     obstacle = False
     #this is the case for both when both lanes are present
     if left_line is not None and right_line is not None: 
-        sendCommand('{"T":1,"L":0.08,"R":0.08}')
+        sendCommand('{"T":1,"L":0.15,"R":0.15}')
     #left line and no right line
     if left_line is not None and right_line is None:
+        print("no right lane")
         sendCommand('{"T":1,"L":0.15,"R":0.08}')
     #right line and no left line
-    if right_line is not None and left_line is None:
+    if right_line is not None and left_line is None:   
         sendCommand('{"T":1,"L":0.08,"R":0.15}')
 
     #No lines, keep moving forward
     if right_line is None and left_line is None:
         sendCommand('{"T":1,"L":0.08,"R":0.08}')
 
-
+    #time.sleep(4.5)
 
     return result
 
@@ -361,6 +362,7 @@ def webcam_video_processing():
         start_time = time.time()
 
         # Process the frame
+        time.sleep(2)
         processed_frame = frame_processor(frame)
         
         processing_time = time.time() - start_time
@@ -381,7 +383,7 @@ def webcam_video_processing():
 
 
         # Break the loop on 'q' key press
-        if cv2.waitKey(200) & 0xFF == ord('q'):
+        if cv2.waitKey(50) & 0xFF == ord('q'):
             break
 
     cap.release()
