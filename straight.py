@@ -69,7 +69,7 @@ def HSL_color_selection(image):
     
     # White color mask
     lower_threshold = np.uint8([0, 200, 0])  # H, L, S
-    upper_threshold = np.uint8([255, 255, 255])
+    upper_threshold = np.uint8([245, 245, 245])
     white_mask = cv2.inRange(converted_image, lower_threshold, upper_threshold)
     
     # Combine masks (only white in this case)
@@ -133,7 +133,7 @@ def hough_transform(image):
     rho = 1              # Distance resolution of the accumulator in pixels.
     theta = np.pi / 180  # Angle resolution of the accumulator in radians.
     threshold = 50       # Only lines that are greater than threshold will be returned. Higher the number, fewer lines detected
-    minLineLength = 20   # Line segments shorter than that are rejected. Minimum length of line to be detected
+    minLineLength = 10   # Line segments shorter than that are rejected. Minimum length of line to be detected
     maxLineGap = 100     # Maximum allowed gap between points on the same line to link them. Max gap allowed betweeen the same line to be detected
     lines = cv2.HoughLinesP(image, rho=rho, theta=theta, threshold=threshold,
                              minLineLength=minLineLength, maxLineGap=maxLineGap)
@@ -213,89 +213,139 @@ def lane_lines(image, lines):
     
 #     return lane_center
 
-# def determine_steering_action(lane_center, image_width, tolerance=10):
-#     image_center = image_width / 2
-#     offset = lane_center - image_center
-    
-#     if abs(offset) <= tolerance:
-#         return "1"
-#     elif offset > tolerance:
-#         return "2"
-#     else:
-#         return "3"
-# ends here
+
+
+
+
+
+
+
+
+
+
+
 
 # def draw_lane_lines(image, lines, color=[0, 0, 255], thickness=15):
-#     """Draw lines onto the input image."""
-#     line_image = np.zeros_like(image)
+#     """Draw lines and their coordinates onto the input image."""
+#     line_image = np.zeros_like(image)  # Create a blank image for drawing lines
+
 #     for line in lines:
 #         if line is not None:
-#             cv2.line(line_image, *line, color, thickness)
+#             # Unpack the start and end points of the line
 #             start_point, end_point = line
-#             cv2.putText(line_image,f"Start: {start_point}",start_point,
-#                         cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1,cv2.LINE_AA)
-#             cv2.putText(line_image,f"End: {end_point}",end_point,
-#                         cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1,cv2.LINE_AA)
+            
+#             # Draw the line
+#             cv2.line(line_image, start_point, end_point, color, thickness)
+            
+#             # Add text annotations for the coordinates
+#             cv2.putText(line_image, f"Start: {start_point}", start_point,
+#                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+#             cv2.putText(line_image, f"End: {end_point}", end_point,
+#                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+
+#     # Overlay the line image onto the original image
 #     return cv2.addWeighted(image, 1.0, line_image, 1.0, 0.0)
-def draw_lane_lines(image, lines, color=[0, 0, 255], thickness=12):
-    """Draw lines and the midpoint onto the input image."""
-    line_image = np.zeros_like(image)
-    mid_point = None  # Initialize the midpoint variable
-    
+
+
+def draw_lane_lines(image, lines, color=[0, 0, 255], thickness=15):
+    """Draw lines, midpoints, and their coordinates onto the input image."""
+    line_image = np.zeros_like(image)  # Create a blank image for drawing lines
+
     for line in lines:
         if line is not None:
+            # Unpack the start and end points of the line
             start_point, end_point = line
+            
+            # Draw the line
             cv2.line(line_image, start_point, end_point, color, thickness)
             
-            # Calculate midpoint between left and right end points
-            if mid_point is None:
-                mid_point = np.array(end_point)  # Initialize mid_point with the first end_point
-            else:
-                mid_point = (mid_point + np.array(end_point)) // 2  # Average of the points for midpoint
-    
-            cv2.putText(line_image, f"Start: {start_point}", start_point,
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
-            cv2.putText(line_image, f"End: {end_point}", end_point,
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
-    
-    # Draw midpoint if both lines were detected
-    if mid_point is not None:
-        # Convert midpoint to standard integer format
-        mid_point = (int(mid_point[0]), int(mid_point[1]))
+            # Calculate the midpoint
+            midpoint = ((start_point[0] + end_point[0]) // 2, (start_point[1] + end_point[1]) // 2)
+            
+            # Draw the midpoint
+            cv2.circle(line_image, midpoint, 5, (0, 255, 0), -1)  # Green dot for midpoint
+            
+            # Add text annotations for the coordinates
+            cv2.putText(line_image, f"Start: {start_point}", (start_point[0] + 10, start_point[1] - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(line_image, f"End: {end_point}", (end_point[0] + 10, end_point[1] - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(line_image, f"Mid: {midpoint}", (midpoint[0] + 10, midpoint[1] - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
-        # Draw a circle at the midpoint
-        cv2.circle(line_image, mid_point, 5, (0, 255, 0), -1)
-        # Draw an "X" at the midpoint for additional visibility
-        cv2.drawMarker(line_image, mid_point, (0, 255, 0), markerType=cv2.MARKER_TILTED_CROSS, markerSize=15, thickness=2)
-        # Print the coordinates of the midpoint
-        print(f"Midpoint: {mid_point}")
-        # Optionally, display the coordinates on the image
-        cv2.putText(line_image, f"Midpoint: {mid_point}", (mid_point[0] + 10, mid_point[1] + 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
-    
+    # Overlay the line image onto the original image
     return cv2.addWeighted(image, 1.0, line_image, 1.0, 0.0)
 
-def send_command_to_esp32(url):
-    print(url)
-    response = requests.get(url)
-    return response.text
 
-    # try:
-    #     response = requests.get(url)
+#Some logic refining needed
+# def draw_lane_lines(image, lines, color=[0, 0, 255], thickness=12):
+#     """Draw lines and the midpoint onto the input image."""
+#     line_image = np.zeros_like(image)
+#     mid_point = None  # Initialize the midpoint variable
+#     points = []
 
-    #     if response.status_code == 200:
-    #         print("signal is being sent")
-    #     else:
-    #         print("Failed to send signal. Status code: {response.status_code}")
+#     for line in lines:
+#         if line is not None:
+#             start_point, end_point = line
+#             cv2.line(line_image, start_point, end_point, color, thickness)
+            
+#             # Add both start and end points to `points` for averaging
+#             points.extend([start_point, end_point])
+
+#             # Calculate midpoint between left and right end points
+#             # if mid_point is None:
+#             #     mid_point = np.array(end_point)  # Initialize mid_point with the first end_point
+#             # else:
+#             #     mid_point = (mid_point + np.array(end_point)) // 2  # Average of the points for midpoint
+
+#             # Annotate the start and end points on the image
+#             cv2.putText(line_image, f"Start: {start_point}", start_point,
+#                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+#             cv2.putText(line_image, f"End: {end_point}", end_point,
+#                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
     
-    # except requests.exceptions.Timeout:
-    #     print("Request Timed out")
+#     # Draw midpoint if both lines were detected
+#     # if mid_point is not None:
+#     #     # Convert midpoint to standard integer format
+#     #     mid_point = (int(mid_point[0]), int(mid_point[1]))
 
-    # except requests.exceptions.ConnectionError:
-    #     print("Failed to connect to ESP32")
+#     #     # Draw a circle at the midpoint
+#     #     cv2.circle(line_image, mid_point, 5, (0, 255, 0), -1)
+#     #     # Draw an "X" at the midpoint for additional visibility
+#     #     cv2.drawMarker(line_image, mid_point, (0, 255, 0), markerType=cv2.MARKER_TILTED_CROSS, markerSize=15, thickness=2)
+#     #     # Print the coordinates of the midpoint
+#     #     print(f"Midpoint: {mid_point}")
+#     #     # Optionally, display the coordinates on the image
+#     #     cv2.putText(line_image, f"Midpoint: {mid_point}", (mid_point[0] + 10, mid_point[1] + 10),
+#     #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+#     # Calculate and draw midpoint if there are points detected
+#     if points:
+#         # Convert points to numpy array for mean calculation
+#         points = np.array(points)
+#         mid_point = tuple(np.mean(points, axis=0).astype(int))
 
-    # except:
-    #     print(f"failed to send {url}")
+#         # Draw a circle and cross marker at the midpoint
+#         cv2.circle(line_image, mid_point, 5, (0, 255, 0), -1)
+#         cv2.drawMarker(line_image, mid_point, (0, 255, 0), markerType=cv2.MARKER_TILTED_CROSS, markerSize=15, thickness=2)
+
+#         # Print the midpoint coordinates and annotate them on the image
+#         print(f"Midpoint: {mid_point}")
+#         cv2.putText(line_image, f"Midpoint: {mid_point}", (mid_point[0] + 10, mid_point[1] + 10),
+#                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+    
+#     # Overlay the line image on the original image
+#     return cv2.addWeighted(image, 1.0, line_image, 1.0, 0.0)
+
+
+
+
+
+# Global variables to track midpoints
+midpoint_left = None
+midpoint_right = None
+prev_midpoint_left = None
+prev_midpoint_right = None
+steeringThreshold = 5
 
 def frame_processor(image):
     """
@@ -309,19 +359,51 @@ def frame_processor(image):
     edges = canny_detector(smooth)
     region = region_selection(edges)
 
-    cv2.imshow('Region of interest with 1st triangle', region)
+    #cv2.imshow('Region of interest with 1st triangle', region)
     hough = hough_transform(region)
     left_line, right_line = lane_lines(image, hough)
-    print("left_line:",left_line,"Right:",right_line)
-    # Determine lane center and decide movement
-    #lane_center = get_lane_center(left_line, right_line, image.shape[1])
-    #url = determine_steering_action(lane_center, image.shape[1])
 
-    # Send the action command to the ESP32
-    #send_command_to_esp32(url)
-    #print(url)
-    #Move_Bot(url)
-    
+    global prev_midpoint_left,prev_midpoint_right 
+    # Reset midpoints
+    midpoint_left = None
+    midpoint_right = None
+
+
+    if left_line is not None and right_line is None:
+        
+        start_point_left, end_point_left = left_line
+        midpoint_left = (
+        (start_point_left[0] + end_point_left[0]) // 2,  # x-coordinate
+        (start_point_left[1] + end_point_left[1]) // 2   # y-coordinate
+         )
+        print("Previous point: ",prev_midpoint_left,"Current point: ",midpoint_left)
+
+    if left_line is None and right_line is not None:   
+        
+        start_point_right, end_point_right = right_line
+        midpoint_right = (
+        (start_point_right[0] + end_point_right[0]) // 2,  # x-coordinate
+        (start_point_right[1] + end_point_right[1]) // 2   # y-coordinate
+        )
+        print(midpoint_right,"Only Right line exist")
+    if left_line is not None and right_line is not None:   
+            # Calculate midpoints for left and right lines
+        start_point_left, end_point_left = left_line
+        start_point_right, end_point_right = right_line
+        midpoint_left = (
+        (start_point_left[0] + end_point_left[0]) // 2,  # x-coordinate
+        (start_point_left[1] + end_point_left[1]) // 2   # y-coordinate
+         )
+
+        midpoint_right = (
+        (start_point_right[0] + end_point_right[0]) // 2,  # x-coordinate
+        (start_point_right[1] + end_point_right[1]) // 2   # y-coordinate
+        )
+        print("Both lanes exist.. calculate midpoint")
+
+
+
+
     # Draw lane lines for visualization
     result = draw_lane_lines(image, [left_line, right_line])
 
@@ -331,24 +413,59 @@ def frame_processor(image):
     if left_line is not None and right_line is not None: 
         sendCommand('{"T":1,"L":0.0,"R":0.0}')
         sendCommand('{"T":1,"L":0.15,"R":0.15}')
-    #left line and no right line
+    # #left line and no right line
     if left_line is not None and right_line is None:
-        print("no right lane")
-        sendCommand('{"T":1,"L":0.0,"R":0.0}')
-        sendCommand('{"T":1,"L":0.30,"R":0.08}')
-    #right line and no left line
-    if right_line is not None and left_line is None: 
-        sendCommand('{"T":1,"L":0.0,"R":0.0}')  
-        sendCommand('{"T":1,"L":0.08,"R":0.30}')
+        if prev_midpoint_left is None or prev_midpoint_left == midpoint_left or (midpoint_left[0]) > (prev_midpoint_left[0]-steeringThreshold) and (midpoint_left[0]) < (prev_midpoint_left[0]+steeringThreshold) :
+            print("Basic command for left line")
+            sendCommand('{"T":1,"L":0.0,"R":0.0}')
+            sendCommand('{"T":1,"L":0.15,"R":0.08}')
+            print("Continue along the same path")
+        elif (midpoint_left[0]) > (prev_midpoint_left[0]+steeringThreshold):
+            print("Move away left")
+            sendCommand('{"T":1,"L":0.0,"R":0.0}')
+            sendCommand('{"T":1,"L":0.35,"R":0.08}') #move away the left lane
+        elif (midpoint_left[0]) < (prev_midpoint_left[0]-steeringThreshold):
+            print("Move toward left")
+            sendCommand('{"T":1,"L":0.0,"R":0.0}')
+            sendCommand('{"T":1,"L":0.08,"R":0.25}') #move to the left lane
+        
+    # #right line and no left line
+    # if right_line is not None and left_line is None: 
+    #     sendCommand('{"T":1,"L":0.0,"R":0.0}')  
+    #     sendCommand('{"T":1,"L":0.08,"R":0.30}')
 
-    #No lines, keep moving forward
-    if right_line is None and left_line is None:
-        sendCommand('{"T":1,"L":0.0,"R":0.0}')
-        sendCommand('{"T":1,"L":0.20,"R":0.20}')
+    # #No lines, keep moving forward
+    # if right_line is None and left_line is None:
+    #     sendCommand('{"T":1,"L":0.0,"R":0.0}')
+    #     sendCommand('{"T":1,"L":0.20,"R":0.20}')
 
-    #time.sleep(4.5)
+    # #time.sleep(4.5)
+
+    # Save current midpoints for the next iteration
+    prev_midpoint_left = midpoint_left
+    prev_midpoint_right = midpoint_right
+
 
     return result
+
+
+# Function to calculate turn angle based on lane center deviation
+def calculateTurnAngle(img, left_fit, right_fit):
+    y_eval = img.shape[0]
+    left_x = left_fit[0] * y_eval**2 + left_fit[1] * y_eval + left_fit[2]
+    right_x = right_fit[0] * y_eval**2 + right_fit[1] * y_eval + right_fit[2]
+    lane_center = (left_x + right_x) / 2
+    image_center = img.shape[1] / 2
+    angle_offset = np.arctan((lane_center - image_center) / y_eval) * (180 / np.pi)
+    return round(angle_offset, 2)
+
+# Function to display angle information on the result image
+def displayTurnAngle(img, angle_offset):
+    turn_direction = 'Left' if angle_offset < 0 else 'Right'
+    text = f'Turn {turn_direction} by {abs(angle_offset)} degrees'
+    img = cv2.putText(img, text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
+    return img
+
 
 def webcam_video_processing():
     """Capture video from the webcam and process it for lane detection."""
@@ -387,7 +504,7 @@ def webcam_video_processing():
 
 
         # Break the loop on 'q' key press
-        if cv2.waitKey(25) & 0xFF == ord('q'):
+        if cv2.waitKey(5) & 0xFF == ord('q'):
             sendCommand('{"T":1,"L":0.0,"R":0.0}')
             break
 
