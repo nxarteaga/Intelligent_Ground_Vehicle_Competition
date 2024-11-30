@@ -345,7 +345,7 @@ midpoint_left = None
 midpoint_right = None
 prev_midpoint_left = None
 prev_midpoint_right = None
-steeringThreshold = 5
+steeringThreshold = 10
 
 def frame_processor(image):
     """
@@ -411,23 +411,26 @@ def frame_processor(image):
     obstacle = False
     #this is the case for both when both lanes are present
     if left_line is not None and right_line is not None: 
-        sendCommand('{"T":1,"L":0.0,"R":0.0}')
-        sendCommand('{"T":1,"L":0.15,"R":0.15}')
+        # sendCommand('{"T":1,"L":0.0,"R":0.0}')
+        sendCommand('{"T":1,"L":0.25,"R":0.25}')
     # #left line and no right line
     if left_line is not None and right_line is None:
         if prev_midpoint_left is None or prev_midpoint_left == midpoint_left or (midpoint_left[0]) > (prev_midpoint_left[0]-steeringThreshold) and (midpoint_left[0]) < (prev_midpoint_left[0]+steeringThreshold) :
             print("Basic command for left line")
-            sendCommand('{"T":1,"L":0.0,"R":0.0}')
-            sendCommand('{"T":1,"L":0.15,"R":0.08}')
+            # sendCommand('{"T":1,"L":0.0,"R":0.0}')
+            sendCommand('{"T":1,"L":0.20,"R":0.20}')
             print("Continue along the same path")
         elif (midpoint_left[0]) > (prev_midpoint_left[0]+steeringThreshold):
             print("Move away left")
-            sendCommand('{"T":1,"L":0.0,"R":0.0}')
-            sendCommand('{"T":1,"L":0.35,"R":0.08}') #move away the left lane
+            # sendCommand('{"T":1,"L":0.0,"R":0.0}')
+            sendCommand('{"T":1,"L":0.40,"R":-0.05}') #move away the left lane
+            # sendCommand('{"T":1,"L":0.50,"R":0.0}') #move away the left lane
+            # sendCommand('{"T":1,"L":0.50,"R":0.0}') #move away the left lane
+            # sendCommand('{"T":1,"L":0.50,"R":0.0}') #move away the left lane
         elif (midpoint_left[0]) < (prev_midpoint_left[0]-steeringThreshold):
             print("Move toward left")
-            sendCommand('{"T":1,"L":0.0,"R":0.0}')
-            sendCommand('{"T":1,"L":0.08,"R":0.25}') #move to the left lane
+            # sendCommand('{"T":1,"L":0.0,"R":0.0}')
+            sendCommand('{"T":1,"L":0.08,"R":0.20}') #move to the left lane
         
     # #right line and no left line
     # if right_line is not None and left_line is None: 
@@ -445,7 +448,7 @@ def frame_processor(image):
     prev_midpoint_left = midpoint_left
     prev_midpoint_right = midpoint_right
 
-
+    # sendCommand('{"T":1,"L":0.08,"R":0.08}')
     return result
 
 
