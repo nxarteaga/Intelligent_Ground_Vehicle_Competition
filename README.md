@@ -1,8 +1,8 @@
-##Lane Detection System
+## Lane Detection System
 
 This project implements a lane detection system that processes video frames to detect lane lines. The program uses Python, OpenCV, and other libraries to perform image processing, edge detection, and lane detection. It is designed to process webcam video input and identify lane lines in real time.
 
-#Features
+# Features
 
 Edge Detection: Utilizes the Canny edge detection algorithm to identify edges in video frames.
 
