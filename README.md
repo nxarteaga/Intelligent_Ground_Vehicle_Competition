@@ -16,7 +16,7 @@ Real-Time Processing: Processes video frames from a webcam and displays the dete
 
 Command Sending: Includes functionality to send movement commands to an ESP32 device (commented by default).
 
-Prerequisites
+## Prerequisites
 
 Python 3.7+
 
@@ -36,7 +36,7 @@ You can install the required dependencies using:
 
 pip install numpy opencv-python matplotlib Pillow moviepy requests
 
-How It Works
+## How It Works
 
 Color Filtering: Converts the RGB image to HSL and filters white lane lines.
 
@@ -54,7 +54,7 @@ Lane Drawing: Draws lane lines on the original frame.
 
 Real-Time Processing: Displays the processed video with FPS information.
 
-Running the Code
+## Running the Code
 
 Connect Webcam: Ensure a webcam is connected to your computer.
 
@@ -66,7 +66,7 @@ Real-Time Lane Detection: The video stream will open, showing lane detection res
 
 Exit: Press the q key to stop the program.
 
-Code Structure
+## Code Structure
 
 Image Processing Functions:
 
@@ -80,7 +80,7 @@ gaussian_smoothing(image): Applies Gaussian blur to reduce noise.
 
 canny_detector(image): Applies Canny edge detection.
 
-Lane Detection Functions:
+## Lane Detection Functions:
 
 region_selection(image): Masks areas outside the region of interest.
 
@@ -94,15 +94,15 @@ lane_lines(image, lines): Creates lane lines.
 
 draw_lane_lines(image, lines): Draws lines on the image.
 
-Webcam Processing:
+### Webcam Processing:
 
 webcam_video_processing(): Captures webcam video and processes each frame.
 
-ESP32 Communication:
+### ESP32 Communication:
 
 send_command_to_esp32(url): Sends HTTP commands to the ESP32 (commented by default).
 
-Customization
+## Customization
 
 Adjust Canny Thresholds:
 Modify low_threshold and high_threshold in the canny_detector function for edge sensitivity.
@@ -113,13 +113,13 @@ Update the top_left, top_right, bottom_left, and bottom_right coordinates in reg
 Hough Transform Parameters:
 Modify rho, theta, threshold, minLineLength, and maxLineGap in the hough_transform function to tweak line detection.
 
-Known Issues
+## Known Issues
 
 Performance may vary depending on the quality of the webcam and lighting conditions.
 
 Lane detection may fail if the lane lines are faded or obscured.
 
-Future Improvements
+## Future Improvements
 
 Add support for yellow lane detection.
 
@@ -129,7 +129,7 @@ Integrate machine learning for robust lane tracking.
 
 Optimize for low-light conditions.
 
-License
+## License
 
 This project is open-source and available under the MIT License.
 
